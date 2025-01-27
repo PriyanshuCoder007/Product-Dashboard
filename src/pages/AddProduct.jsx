@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { addProduct } from "../utility/api";
+import { useNavigate } from "react-router-dom";
 
 const AddProduct = ({ onAdd }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
     price: "",
     description: "",
-    category: "",
     image: "",
   });
   const [error, setError] = useState("");
@@ -27,65 +28,73 @@ const AddProduct = ({ onAdd }) => {
         title: formData.title,
         price: parseFloat(formData.price),
         description: formData.description,
-        category: formData.category || "general",
         image: formData.image || "https://via.placeholder.com/150",
       });
 
-      onAdd(newProduct);
-      // Reset form data
-      setFormData({
-        title: "",
-        price: "",
-        description: "",
-        category: "",
-        image: "",
-      });
-      setError("");
+      if (onAdd) onAdd(newProduct);
+      navigate("/dashboard", { state: { newProduct } });
     } catch (error) {
       setError("Failed to add product. Please try again.");
     }
   };
 
   return (
-    <div>
+    <div className="add-product-container">
       <h2>Add Product</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="title"
-          placeholder="Product Name *"
-          value={formData.title}
-          onChange={handleChange}
-        />
-        <input
-          type="number"
-          name="price"
-          placeholder="Price *"
-          value={formData.price}
-          onChange={handleChange}
-        />
-        <textarea
-          name="description"
-          placeholder="Description *"
-          value={formData.description}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="category"
-          placeholder="Category (optional)"
-          value={formData.category}
-          onChange={handleChange}
-        />
-        <input
-          type="url"
-          name="image"
-          placeholder="Image URL (optional)"
-          value={formData.image}
-          onChange={handleChange}
-        />
-        <button type="submit">Add Product</button>
+      {error && <p className="error-message">{error}</p>}
+      <form onSubmit={handleSubmit} className="add-product-form">
+        <div className="form-group">
+          <label htmlFor="title">Product Name *</label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="price">Price *</label>
+          <input
+            type="number"
+            id="price"
+            name="price"
+            value={formData.price}
+            onChange={handleChange}
+            step="0.01"
+            min="0"
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="description">Description *</label>
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            required
+            rows="4"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="image">Image URL</label>
+          <input
+            type="url"
+            id="image"
+            name="image"
+            value={formData.image}
+            onChange={handleChange}
+          />
+        </div>
+
+        <button type="submit" className="submit-button">
+          Add Product
+        </button>
       </form>
     </div>
   );

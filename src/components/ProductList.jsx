@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { getProducts, deleteProduct } from "../utility/api";
+import { getProducts, deleteProduct, updateProduct } from "../utility/api";
+import EditProduct from "../pages/EditProduct";
 
 const ProductList = ({ onEdit }) => {
   const [products, setProducts] = useState([]);
-  const [addpd, setAddPD] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   useEffect(() => {
     fetchProducts();
@@ -29,11 +31,34 @@ const ProductList = ({ onEdit }) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
         await deleteProduct(id);
-        fetchProducts(); // Refresh the product list
+        setProducts(products.filter((product) => product.id !== id));
       } catch (error) {
         console.error("Failed to delete product:", error.message);
         setError("Failed to delete product. Please try again.");
       }
+    }
+  };
+
+  const handleProductUpdate = (updatedProduct) => {
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product.id === updatedProduct.id ? updatedProduct : product
+      )
+    );
+  };
+
+  const handleEditClick = (product) => {
+    setSelectedProduct(product);
+    setIsEditing(true);
+  };
+
+  const handleSave = async (updatedProduct) => {
+    try {
+      const updated = await updateProduct(selectedProduct.id, updatedProduct);
+      handleProductUpdate(updated);
+      setIsEditing(false);
+    } catch (error) {
+      setError("Failed to update product. Please try again.");
     }
   };
 
@@ -44,20 +69,14 @@ const ProductList = ({ onEdit }) => {
   return (
     <div>
       <h2>Product List</h2>
-
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="error-message">{error}</p>}
 
       <input
         type="text"
         placeholder="Search products..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{
-          marginBottom: "10px",
-          padding: "5px",
-          width: "100%",
-          maxWidth: "300px",
-        }}
+        className="search-input"
       />
 
       {loading ? (
@@ -65,79 +84,39 @@ const ProductList = ({ onEdit }) => {
       ) : filteredProducts.length === 0 ? (
         <p>No products found.</p>
       ) : (
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            marginTop: "10px",
-          }}
-        >
+        <table className="products-table">
           <thead>
             <tr>
-              <th style={{ border: "1px solid #ddd", padding: "8px" }}>Name</th>
-              <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-                Image
-              </th>
-              <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-                Price
-              </th>
-              <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-                Description
-              </th>
-              <th style={{ border: "1px solid #ddd", padding: "8px" }}>
-                Actions
-              </th>
+              <th>Name</th>
+              <th>Image</th>
+              <th>Price</th>
+              <th>Description</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredProducts.map((product) => (
               <tr key={product.id}>
-                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                  {product.title}
-                </td>
-                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                <td>{product.title}</td>
+                <td>
                   <img
-                    src={product.image || "https://via.placeholder.com/50"} // Placeholder if image is missing
+                    src={product.image || "https://via.placeholder.com/50"}
                     alt={product.title}
-                    style={{
-                      width: "50px",
-                      height: "50px",
-                      objectFit: "cover",
-                      borderRadius: "5px",
-                    }}
+                    className="product-image"
                   />
                 </td>
-                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                  ${product.price}
-                </td>
-                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
-                  {product.description}
-                </td>
-                <td style={{ border: "1px solid #ddd", padding: "8px" }}>
+                <td>${product.price}</td>
+                <td>{product.description}</td>
+                <td>
                   <button
-                    onClick={() => onEdit(product)}
-                    style={{
-                      padding: "5px 10px",
-                      marginRight: "5px",
-                      backgroundColor: "#4CAF50",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "3px",
-                      cursor: "pointer",
-                    }}
+                    onClick={() => handleEditClick(product)}
+                    className="btn btn-edit"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(product.id)}
-                    style={{
-                      padding: "5px 10px",
-                      backgroundColor: "#f44336",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "3px",
-                      cursor: "pointer",
-                    }}
+                    className="btn btn-delete"
                   >
                     Delete
                   </button>
@@ -146,6 +125,14 @@ const ProductList = ({ onEdit }) => {
             ))}
           </tbody>
         </table>
+      )}
+
+      {isEditing && selectedProduct && (
+        <EditProduct
+          product={selectedProduct}
+          onSave={handleSave}
+          onClose={() => setIsEditing(false)}
+        />
       )}
     </div>
   );
